@@ -1,7 +1,8 @@
 // src/components/CreateClient.js
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, addDoc, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs } from 'firebase/firestore';
+import ClientDetails from './ClientDetails';
 
 const CreateClient = () => {
   const [name, setName] = useState('');
@@ -9,11 +10,10 @@ const CreateClient = () => {
   const [address, setAddress] = useState('');
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
-  const [services, setServices] = useState([]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       const docRef = await addDoc(collection(db, 'client'), {
         name,
@@ -39,29 +39,6 @@ const CreateClient = () => {
     setClients(clientsList);
   };
 
-  const fetchClientDetails = async (clientId) => {
-    const docRef = doc(db, 'client', clientId);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      setSelectedClient({ id: clientId, ...docSnap.data() });
-      fetchServices(clientId);
-    } else {
-      console.log('No such document!');
-    }
-  };
-
-  const fetchServices = async (clientId) => {
-    const querySnapshot = await getDocs(collection(db, 'service'));
-    const servicesList = querySnapshot.docs
-      .filter(doc => doc.data().clientId === clientId)
-      .map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-    setServices(servicesList);
-  };
-
   useEffect(() => {
     fetchClients();
   }, []);
@@ -69,24 +46,7 @@ const CreateClient = () => {
   return (
     <div>
       {selectedClient ? (
-        <div>
-          <h2>Client Details</h2>
-          <p><strong>Name:</strong> {selectedClient.name}</p>
-          <p><strong>Phone:</strong> {selectedClient.phone}</p>
-          <p><strong>Address:</strong> {selectedClient.address}</p>
-
-          <h3>Services</h3>
-          {services.length > 0 ? (
-            <ul>
-              {services.map((service) => (
-                <li key={service.id}>{service.name}</li>
-              ))}
-            </ul>
-          ) : (
-            <p>No services assigned.</p>
-          )}
-          <button onClick={() => setSelectedClient(null)}>Back to Client List</button>
-        </div>
+        <ClientDetails clientId={selectedClient.id} onBack={() => setSelectedClient(null)} />
       ) : (
         <div>
           <h2>Create Client</h2>
@@ -103,7 +63,7 @@ const CreateClient = () => {
             <div>
               <label>Phone</label>
               <input
-                type="phone"
+                type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 required
@@ -112,7 +72,7 @@ const CreateClient = () => {
             <div>
               <label>Address</label>
               <input
-                type="address"
+                type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 required
@@ -126,7 +86,7 @@ const CreateClient = () => {
             <ul>
               {clients.map((client) => (
                 <li key={client.id}>
-                  {client.name} - <button onClick={() => fetchClientDetails(client.id)}>Details</button>
+                  {client.name} - <button onClick={() => setSelectedClient(client)}>Details</button>
                 </li>
               ))}
             </ul>
@@ -140,3 +100,4 @@ const CreateClient = () => {
 };
 
 export default CreateClient;
+
